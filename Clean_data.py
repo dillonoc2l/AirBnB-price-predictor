@@ -15,6 +15,7 @@ df.drop(columns="neighbourhood_group", inplace = True)
 df.drop(columns="license", inplace = True)
 df.drop(columns="last_review", inplace = True)
 df.drop(columns="host_name", inplace = True)
+df.drop(columns="name", inplace = True)
 
 print(df.isna().sum())#print the number of null values in each column
 
@@ -29,4 +30,7 @@ print(df.isna().sum())
 print("\n")
 print("duplicate rows: " + str(df.duplicated('id').sum()))#print the number of duplicate rows
 
+
 df.to_csv('clean_listings.csv', index= False)
+
+print(df.head())
