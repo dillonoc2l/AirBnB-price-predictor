@@ -4,6 +4,8 @@ from sklearn.model_selection import KFold
 from sklearn.model_selection import cross_val_score
 from sklearn import tree
 from sklearn.preprocessing import OneHotEncoder
+from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+
 
 df = pd.read_csv("clean_listings.csv")
 #print(df.head())
@@ -16,21 +18,33 @@ df = pd.read_csv("clean_listings.csv")
 
 ohe = OneHotEncoder(handle_unknown='ignore', sparse_output= False).set_output(transform='pandas') #one-hot encoder as pandas dataframe
 
-oheNeighbourhood = ohe.fit_transform(df[['neighbourhood']])#creating one-hot encoded dataframes for both features
+cat_cols = ["neighbourhood", "room_type"]
+
+ohe_df = ohe.fit_transform(df[cat_cols])
+
+df = pd.concat([df.drop(columns=cat_cols), ohe_df], axis=1)
+'''oheNeighbourhood = ohe.fit_transform(df[['neighbourhood']])#creating one-hot encoded dataframes for both features
 oheRoomType = ohe.fit_transform(df[['room_type']])
 
 df = pd.concat([df, oheNeighbourhood], axis = 1).drop(columns = ['neighbourhood'])  #concatinating dataframes to original dataframe 
 df = pd.concat([df, oheRoomType], axis = 1).drop(columns = ['room_type'])           #and dropping unnecessary catagorical data
-
+'''
 
 
 
 X = df.drop(['price', 'id', 'host_id'],  axis=1)#create features
 y = df["price"]#create target  
-
+'''
 clf = tree.DecisionTreeRegressor()
 clf = clf.fit(X,y)
 
 cvscore = cross_val_score(clf, X, y.values.ravel(), cv = 10)
 
 print(cvscore)
+'''
+model = GradientBoostingRegressor()#RandomForestRegressor(verbose=1, n_jobs=-1)
+#model = model.fit(X,y)
+
+cvScore = cross_val_score(model, X, y.values.ravel(), cv = 10)
+
+print(cvScore)
