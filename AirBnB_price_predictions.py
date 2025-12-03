@@ -4,7 +4,7 @@ from sklearn.model_selection import cross_val_score, train_test_split, GridSearc
 from sklearn import tree
 from sklearn.preprocessing import OneHotEncoder, StandardScaler, MinMaxScaler
 from sklearn.ensemble import GradientBoostingRegressor
-from sklearn.metrics import accuracy_score, pairwise_distances, r2_score, mean_absolute_error
+from sklearn.metrics import pairwise_distances, r2_score, mean_absolute_error
 
 
 df = pd.read_csv("clean_listings.csv")
@@ -33,22 +33,23 @@ df = pd.concat([df, oheRoomType], axis = 1).drop(columns = ['room_type'])       
 
 def score_model(df_check):
     X = df_check.drop(['price', 'id', 'host_id'],  axis=1)#create features
-    y = df_check["price"]#create target  
+    y = np.log1p(df_check["price"])#log price to compress outliers (expensive properties)
 
-
-
-    #test and train normlly for testing purposes:
-
+    #split data into testing and training
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=0.2, random_state=32
     )
+
     model =  GradientBoostingRegressor()
     model = model.fit(X_train,y_train)
 
-    y_pred = model.predict(X_test)
+    #y_pred = model.predict(X_test)
+
+    y_pred_log = model.predict(X_test)
+    y_pred = np.expm1(y_pred_log) #expm1 data to reverse log of price and predict actual price
 
     # Evaluate
-    r2 = r2_score(y_test, y_pred)
+    r2 = r2_score(np.expm1(y_test), y_pred)#expm1 - turn log prices into actual prices
     print("R2 Score:", r2)
 
     #cross validation
