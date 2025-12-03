@@ -8,9 +8,6 @@ from sklearn.metrics import pairwise_distances, r2_score, mean_absolute_error
 
 
 df = pd.read_csv("clean_listings.csv")
-#print(df.head())
-
-
 
 
 #need to convert categorical data in 'neighbourhood' and 'room_type' to numerical data
@@ -23,12 +20,6 @@ cat_cols = ["neighbourhood", "room_type"]
 ohe_df = ohe.fit_transform(df[cat_cols])
 
 df = pd.concat([df.drop(columns=cat_cols), ohe_df], axis=1)
-'''oheNeighbourhood = ohe.fit_transform(df[['neighbourhood']])#creating one-hot encoded dataframes for both features
-oheRoomType = ohe.fit_transform(df[['room_type']])
-
-df = pd.concat([df, oheNeighbourhood], axis = 1).drop(columns = ['neighbourhood'])  #concatinating dataframes to original dataframe 
-df = pd.concat([df, oheRoomType], axis = 1).drop(columns = ['room_type'])           #and dropping unnecessary catagorical data
-'''
 
 
 def score_model(df_check):
@@ -64,6 +55,36 @@ score_model(df)
 
 
 
+#Add distance to centre of london instead of Latitude and longitude
+
+def haversine(lat1, lon1, lat2, lon2): #Formula to calculate distance between two points on a sphere (earth)
+    R = 6371
+    lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = np.sin(dlat/2)**2 + np.cos(lat1)*np.cos(lat2)*np.sin(dlon/2)**2
+    return 2 * R * np.arcsin(np.sqrt(a))
+
+center_lat, center_lon = 51.509865, -0.118092 #London Centre rough coordinates
+
+df_added_centre = df.copy() #copy dataframe to make changes to
+
+df_added_centre['dist_to_center'] = haversine(
+    df_added_centre['latitude'], df_added_centre['longitude'],
+    center_lat, center_lon
+)
+
+df_added_centre.drop(columns="latitude", axis = 1, inplace=True)#remove latitude and longitude as no longer needed
+df_added_centre.drop(columns="longitude", axis = 1, inplace=True)
+
+print('Added distance to centre:')
+score_model(df_added_centre) # check to see if model improved
+
+df = df_added_centre # add changes to original data frame
+
+
+
+
 ''' #gridsearch for best hyperparameters
 param_grid = [{ 
     'max_depth' : [3,4,5,6], 
@@ -80,45 +101,3 @@ print(grid_search.best_params_)
 print(grid_search.cv_results_)
 
 '''
-
-
-#Test to see if addeding new parameter 'distance to city centre' imporves models predictions
-
-def haversine(lat1, lon1, lat2, lon2):
-    R = 6371
-    lat1, lon1, lat2, lon2 = map(np.radians, [lat1, lon1, lat2, lon2])
-    dlat = lat2 - lat1
-    dlon = lon2 - lon1
-    a = np.sin(dlat/2)**2 + np.cos(lat1)*np.cos(lat2)*np.sin(dlon/2)**2
-    return 2 * R * np.arcsin(np.sqrt(a))
-
-center_lat, center_lon = 51.509865, -0.118092
-
-
-df_added_centre = df.copy()
-
-df_added_centre['dist_to_center'] = haversine(
-    df_added_centre['latitude'], df_added_centre['longitude'],
-    center_lat, center_lon
-)
-
-df_added_centre.drop(columns="latitude", axis = 1, inplace=True)
-df_added_centre.drop(columns="longitude", axis = 1, inplace=True)
-
-print('Added distance to centre:')
-score_model(df_added_centre)#score returned is worse tha original
-
-df = df_added_centre
-
-df_dropped = df.copy()
-
-#print(df.columns)
-df_dropped.drop(columns="reviews_per_month", axis = 1, inplace=True)
-
-print('Removed reviews_per_month:')
-score_model(df_dropped)
-
-df_dropped.drop(columns="number_of_reviews_ltm", axis = 1, inplace=True)
-
-print('Removed number_of_reviews_ltm:')
-score_model(df_dropped)
