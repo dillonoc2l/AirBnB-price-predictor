@@ -39,15 +39,13 @@ def score_model(df_check): #can be run after changing data
         X, y, test_size=0.2, random_state=32
     )
 
-    model =  GradientBoostingRegressor()
+    model =  GradientBoostingRegressor()#select model and fit to data
     model = model.fit(X_train,y_train)
-
-    #y_pred = model.predict(X_test)
 
     y_pred_log = model.predict(X_test)
     y_pred = np.expm1(y_pred_log) #expm1 data to reverse log of price and predict actual price
 
-    # Evaluate
+    # Evaluate models predictions
     r2 = r2_score(np.expm1(y_test), y_pred)#expm1 - turn log prices into actual prices
     print("R2 Score:", r2)
 
@@ -59,7 +57,7 @@ def score_model(df_check): #can be run after changing data
     return model, X_train, X_test, y_train, y_test, y_pred
 
 
-print('Original:')
+print('Original:')#evaluate original model using function above
 model, X_train, X_test, y_train, y_test, y_pred = score_model(df)
     
 
@@ -77,24 +75,25 @@ def haversine(lat1, lon1, lat2, lon2): #Formula to calculate distance between tw
 
 center_lat, center_lon = 51.509865, -0.118092 #London Centre rough coordinates
 
-df_added_centre = df.copy() #copy dataframe to make changes to
 
-df_added_centre['dist_to_center'] = haversine(
-    df_added_centre['latitude'], df_added_centre['longitude'],
+
+df['dist_to_center'] = haversine( # calculate airbnbs distance to central london
+    df['latitude'], df['longitude'],
     center_lat, center_lon
 )
 
-df_added_centre.drop(columns="latitude", axis = 1, inplace=True)#remove latitude and longitude as no longer needed
-df_added_centre.drop(columns="longitude", axis = 1, inplace=True)
-
-print('Added distance to centre:')
-model, X_train, X_test, y_train, y_test, y_pred = score_model(df_added_centre) # check to see if model improved
-
-df = df_added_centre # add changes to original data frame
+df.drop(columns="latitude", axis = 1, inplace=True)#remove latitude and longitude as no longer needed
+df.drop(columns="longitude", axis = 1, inplace=True)
 
 
+print('Added distance to centre:')# evaluate model after data change to see if it imporved
+model, X_train, X_test, y_train, y_test, y_pred = score_model(df) 
 
-param_distributions = {
+
+
+
+
+param_distributions = { # hyperparameter ranges for random search cv
     'n_estimators': randint(100, 500),          
     'max_depth': randint(3, 7),                 
     'learning_rate': uniform(0.05, 0.25),       
@@ -104,7 +103,7 @@ param_distributions = {
     'min_samples_leaf': randint(1, 4)           
 }
 
-random_search = RandomizedSearchCV(#
+random_search = RandomizedSearchCV(
     estimator=GradientBoostingRegressor(),
     param_distributions=param_distributions,
     n_iter=50,              # number of random combinations to try
@@ -123,9 +122,9 @@ best_model = random_search.best_estimator_
 
 
 
-
+#
 def evaluate_model(model, X_test, y_test):
-    """Return R2 and MAE for a given model on test data."""
+    #Return R2 and MAE for a given model on test data
     y_pred_log = model.predict(X_test)
     y_pred = np.expm1(y_pred_log)
     r2 = r2_score(np.expm1(y_test), y_pred)
@@ -134,8 +133,8 @@ def evaluate_model(model, X_test, y_test):
 
 def save_best_model(current_model, X, y, model_path='best_airbnb_model.pkl'):
     """
-    Compare the current model with the saved one using average CV score.
-    Saves the better model.
+    Compare the current model with the saved one using average CV score
+    Saves the better model
     """
     # Evaluate current model
     print("\nEvaluating current model using cross-validation...")
